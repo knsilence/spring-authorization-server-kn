@@ -17,6 +17,7 @@ public class LoginController {
     @GetMapping("/login/test")
     public Object test() {
         UserInfo userInfo = testService.find("11");
+        System.out.println("dd");
         return userInfo;
 
     }
