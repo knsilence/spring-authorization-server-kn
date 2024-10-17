@@ -43,30 +43,18 @@ public class AuthorizationConfig {
             OAuth2AuthorizationService authorizationService,
             OAuth2TokenGenerator<?> tokenGenerator) throws Exception {
 
-        OAuth2AuthorizationServerConfigurer authorizationServerConfigurer =
-                new OAuth2AuthorizationServerConfigurer();
+        OAuth2AuthorizationServerConfigurer authorizationServerConfigurer = new OAuth2AuthorizationServerConfigurer();
 
-        authorizationServerConfigurer
-                .tokenEndpoint(tokenEndpoint ->
-                        tokenEndpoint
-                                .accessTokenRequestConverter(
-                                        new EmailCodeGrantAuthenticationConverter())
-                                .authenticationProvider(
-                                        new EmailCodeGrantAuthenticationProvider(
-                                                authorizationService, tokenGenerator)));
-        authorizationServerConfigurer.tokenEndpoint(tokenEndpoint -> tokenEndpoint.accessTokenRequestConverter(
-                        new PasswordCodeGrantAuthenticationConverter())
-                .authenticationProvider(
-                        new PasswordcodeGrantAuthenticationProvider(
-                                authorizationService, tokenGenerator)));
+        authorizationServerConfigurer.tokenEndpoint(tokenEndpoint -> tokenEndpoint.accessTokenRequestConverter(new EmailCodeGrantAuthenticationConverter())
+                .authenticationProvider(new EmailCodeGrantAuthenticationProvider(authorizationService, tokenGenerator)));
+        authorizationServerConfigurer.tokenEndpoint(tokenEndpoint -> tokenEndpoint.accessTokenRequestConverter(new PasswordCodeGrantAuthenticationConverter())
+                .authenticationProvider(new PasswordcodeGrantAuthenticationProvider(authorizationService, tokenGenerator)));
 
         RequestMatcher endpointsMatcher = authorizationServerConfigurer.getEndpointsMatcher();
 
         http
                 .securityMatcher(endpointsMatcher)
-                .authorizeHttpRequests(authorize ->
-                        authorize
-                                .anyRequest().authenticated()
+                .authorizeHttpRequests(authorize -> authorize.anyRequest().authenticated()
                 )
                 .csrf(csrf -> csrf.ignoringRequestMatchers(endpointsMatcher))
                 .apply(authorizationServerConfigurer);
@@ -124,6 +112,7 @@ public class AuthorizationConfig {
         return new DelegatingOAuth2TokenGenerator(
                 jwtGenerator, accessTokenGenerator, refreshTokenGenerator);
     }
+
     @Bean
     public SecurityFilterChain defaultSecurityFilterChain(HttpSecurity http) throws Exception {
         http.authorizeHttpRequests((authorize) -> authorize

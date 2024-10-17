@@ -1,0 +1,41 @@
+server:
+  port: 9018
+
+spring:
+  application:
+    name: payweb-authserver
+  datasource:
+    driver-class-name: com.mysql.cj.jdbc.Driver
+    username: root
+    password: 123456
+    url: jdbc:mysql://localhost:3306/payweb_authserver?userUnicode=true&characterEncoding=utf8
+  #    redis 配置
+  data:
+    redis:
+      database: 0
+      host: localhost
+      port: 6379
+      jedis:
+        pool:
+          max-active: 8
+          max-idle: 8
+          min-idle: 0
+      timeout: 100ms
+  jpa:
+    show-sql: true
+    properties:
+      hibernate:
+        dialect: org.hibernate.dialect.MySQL8Dialect
+    generate-ddl: true
+    hibernate:
+      ddl-auto: update
+#日志
+logging:
+  level:
+    org.springframework.security: trace
+
+#mapper映射文件位置
+mybatis:
+  mapper-locations: classpath:mapper/*.xml
+  #配置xml文件中resultType返回值的包位置
+  typeAliasesPackage: qingxia.tang.jpa.bean
