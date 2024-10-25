@@ -1,8 +1,11 @@
 package com.kn.auth.config;
 
+import com.kn.core.model.LoginUser;
 import com.nimbusds.jose.jwk.source.JWKSource;
 import com.nimbusds.jose.proc.SecurityContext;
 import com.kn.auth.util.SecurityUtils;
+import org.springframework.beans.BeanUtils;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.jdbc.core.JdbcTemplate;
@@ -11,8 +14,13 @@ import org.springframework.security.config.Customizer;
 import org.springframework.security.config.annotation.method.configuration.EnableMethodSecurity;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
+import org.springframework.security.core.userdetails.UserDetails;
+import org.springframework.security.core.userdetails.UserDetailsService;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.crypto.password.PasswordEncoder;
+import org.springframework.security.oauth2.core.oidc.endpoint.OidcParameterNames;
+import org.springframework.security.oauth2.jwt.JwsHeader;
+import org.springframework.security.oauth2.jwt.JwtClaimsSet;
 import org.springframework.security.oauth2.jwt.NimbusJwtEncoder;
 import org.springframework.security.oauth2.server.authorization.*;
 import org.springframework.security.oauth2.server.authorization.client.JdbcRegisteredClientRepository;
@@ -21,6 +29,8 @@ import org.springframework.security.oauth2.server.authorization.config.annotatio
 import org.springframework.security.oauth2.server.authorization.token.*;
 import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.security.web.util.matcher.RequestMatcher;
+
+import java.util.Map;
 
 /**
  * 认证配置
@@ -33,9 +43,13 @@ import org.springframework.security.web.util.matcher.RequestMatcher;
  *
  * @author vains
  */
+//TODO：https://www.youtube.com/watch?v=HdSktctSplc 参考视频
 @Configuration
 @EnableWebSecurity
 public class AuthorizationConfig {
+
+    @Autowired
+    private UserDetailsService userDetailsService;
 
     @Bean
     SecurityFilterChain authorizationServerSecurityFilterChain(
@@ -48,14 +62,12 @@ public class AuthorizationConfig {
         authorizationServerConfigurer.tokenEndpoint(tokenEndpoint -> tokenEndpoint.accessTokenRequestConverter(new EmailCodeGrantAuthenticationConverter())
                 .authenticationProvider(new EmailCodeGrantAuthenticationProvider(authorizationService, tokenGenerator)));
         authorizationServerConfigurer.tokenEndpoint(tokenEndpoint -> tokenEndpoint.accessTokenRequestConverter(new PasswordCodeGrantAuthenticationConverter())
-                .authenticationProvider(new PasswordcodeGrantAuthenticationProvider(authorizationService, tokenGenerator)));
+                .authenticationProvider(new PasswordcodeGrantAuthenticationProvider(authorizationService, tokenGenerator, userDetailsService, passwordEncoder())));
 
         RequestMatcher endpointsMatcher = authorizationServerConfigurer.getEndpointsMatcher();
 
-        http
-                .securityMatcher(endpointsMatcher)
-                .authorizeHttpRequests(authorize -> authorize.anyRequest().authenticated()
-                )
+        http.securityMatcher(endpointsMatcher)
+                .authorizeHttpRequests(authorize -> authorize.anyRequest().authenticated())
                 .csrf(csrf -> csrf.ignoringRequestMatchers(endpointsMatcher))
                 .apply(authorizationServerConfigurer);
 
@@ -107,10 +119,33 @@ public class AuthorizationConfig {
     @Bean
     OAuth2TokenGenerator<?> tokenGenerator(JWKSource<SecurityContext> jwkSource) {
         JwtGenerator jwtGenerator = new JwtGenerator(new NimbusJwtEncoder(jwkSource));
+        jwtGenerator.setJwtCustomizer(jwtCustomizer());
         OAuth2AccessTokenGenerator accessTokenGenerator = new OAuth2AccessTokenGenerator();
         OAuth2RefreshTokenGenerator refreshTokenGenerator = new OAuth2RefreshTokenGenerator();
         return new DelegatingOAuth2TokenGenerator(
                 jwtGenerator, accessTokenGenerator, refreshTokenGenerator);
+    }
+
+    @Bean
+    public OAuth2TokenCustomizer<JwtEncodingContext> jwtCustomizer() {
+        return context -> {
+            JwsHeader.Builder headers = context.getJwsHeader();
+
+            JwtClaimsSet.Builder claims = context.getClaims();
+            if (context.getTokenType().equals(OAuth2TokenType.ACCESS_TOKEN)) {
+                // Customize headers/claims for access_token
+                JwtClaimsSet build = claims.build();
+                Map<String, Object> claims2 = build.getClaims();
+                Object sub = claims2.get("sub");
+                UserDetails userDetails = userDetailsService.loadUserByUsername(sub.toString());
+                LoginUser loginUser = new LoginUser();
+                BeanUtils.copyProperties(userDetails, loginUser);
+                claims.claim("userInfo", loginUser);
+            } else if (context.getTokenType().getValue().equals(OidcParameterNames.ID_TOKEN)) {
+                // Customize headers/claims for id_token
+
+            }
+        };
     }
 
     @Bean
@@ -126,10 +161,11 @@ public class AuthorizationConfig {
                 );
         // 添加BearerTokenAuthenticationFilter，将认证服务当做一个资源服务，解析请求头中的token
         http.oauth2ResourceServer((resourceServer) -> resourceServer
-                .jwt(Customizer.withDefaults())
-                //添加authorization认证授权失败的回调
-                .accessDeniedHandler(SecurityUtils::exceptionHandler)
-                .authenticationEntryPoint(SecurityUtils::exceptionHandler)
+                        .jwt(Customizer.withDefaults())
+                        //添加authorization认证授权失败的回调
+                        .accessDeniedHandler(SecurityUtils::exceptionHandler)
+                        .authenticationEntryPoint(SecurityUtils::exceptionHandler)
+                // Accept access tokens for User Info and/or Client Registration
         );
         return http.build();
     }

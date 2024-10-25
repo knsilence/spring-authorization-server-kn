@@ -1,45 +1,64 @@
 package com.kn.auth.config;
 
+import org.springframework.context.annotation.Bean;
+import org.springframework.context.annotation.Profile;
 import org.springframework.lang.Nullable;
-import org.springframework.security.authentication.AbstractAuthenticationToken;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.oauth2.core.AuthorizationGrantType;
+import org.springframework.security.oauth2.core.OAuth2AuthenticationException;
+import org.springframework.security.oauth2.core.OAuth2ErrorCodes;
+import org.springframework.security.oauth2.jwt.JwtClaimsSet;
+import org.springframework.security.oauth2.server.authorization.OAuth2TokenType;
+import org.springframework.security.oauth2.server.authorization.authentication.OAuth2AuthorizationGrantAuthenticationToken;
+import org.springframework.security.oauth2.server.authorization.token.JwtEncodingContext;
+import org.springframework.security.oauth2.server.authorization.token.OAuth2TokenCustomizer;
 
 import java.util.Collections;
 import java.util.Map;
 import java.util.Set;
 
-public class PasswordCodeGrantAuthenticationToken extends AbstractAuthenticationToken {
+public class PasswordCodeGrantAuthenticationToken extends OAuth2AuthorizationGrantAuthenticationToken {
 
-    /**
-     * ???ε???????scope
-     */
+private static final long serialVersionUID = 1L;
+
     private final Set<String> scopes;
 
-    /**
-     * ???????????
-     */
-    private final Authentication clientPrincipal;
+    private final String username;
+
+    private final String password;
+
+    public String getUsername() {
+        return username;
+    }
+
+    public String getPassword() {
+        return password;
+    }
+//    private final Authentication clientPrincipal;
 
     /**
      * ???????????
      */
-    private final Map<String, Object> additionalParameters;
+//    private final Map<String, Object> additionalParameters;
 
     /**
      * ??????
      */
-    private final AuthorizationGrantType authorizationGrantType;
+//    private final AuthorizationGrantType authorizationGrantType;
 
     public PasswordCodeGrantAuthenticationToken(AuthorizationGrantType authorizationGrantType,
                                                 Authentication clientPrincipal,
                                                 @Nullable Set<String> scopes,
                                                 @Nullable Map<String, Object> additionalParameters) {
-        super(Collections.emptyList());
+        super(authorizationGrantType,clientPrincipal,additionalParameters);
         this.scopes = scopes;
-        this.clientPrincipal = clientPrincipal;
-        this.additionalParameters = additionalParameters;
-        this.authorizationGrantType = authorizationGrantType;
+//        this.clientPrincipal = clientPrincipal;
+//        this.authorizationGrantType = authorizationGrantType;
+        this.username= (String) additionalParameters.get(SecurityConstants.OAUTH_PARAMETER_PASSWORD_NAME);
+        this.password= (String) additionalParameters.get(SecurityConstants.OAUTH_PARAMETER_PASSWORD_PASSWORD);
+        if(this.scopes==null||this.scopes.isEmpty()){
+            throw new OAuth2AuthenticationException(OAuth2ErrorCodes.INVALID_SCOPE);
+        }
     }
 
     @Override
@@ -47,36 +66,22 @@ public class PasswordCodeGrantAuthenticationToken extends AbstractAuthentication
         return null;
     }
 
-    @Override
+    /*@Override
     public Object getPrincipal() {
         return clientPrincipal;
-    }
+    }*/
 
-    /**
-     * ?????????scope(s)
-     *
-     * @return ?????scope(s)
-     */
+
     public Set<String> getScopes() {
         return this.scopes;
     }
 
-    /**
-     * ?????????е?authorization grant type
-     *
-     * @return authorization grant type
-     */
-    public AuthorizationGrantType getAuthorizationGrantType() {
+
+/*    public AuthorizationGrantType getAuthorizationGrantType() {
         return this.authorizationGrantType;
-    }
+    }*/
 
-    /**
-     * ?????????е???????
-     *
-     * @return ???????
-     */
-    public Map<String, Object> getAdditionalParameters() {
+/*    public Map<String, Object> getAdditionalParameters() {
         return this.additionalParameters;
-    }
-
+    }*/
 }

@@ -2,6 +2,9 @@ package com.kn.auth.controller;
 
 import com.kn.auth.pojo.UserInfo;
 import com.kn.auth.service.TestService;
+import com.kn.core.common.UserUtils;
+import com.kn.core.model.LoginUser;
+import jakarta.annotation.Resource;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.userdetails.UserDetails;
@@ -22,9 +25,13 @@ public class LoginController {
         return userInfo;
 
     }
-    @GetMapping("/login/user")
-    public Object user(Authentication authentication) {
-        return "spring:"+authentication.getName();
 
-    }
+/*    @Resource
+    private UserUtils userUtils;
+
+    @GetMapping("/login/user")
+    public Object user() {
+        LoginUser loginUser = userUtils.loginUser();
+        return loginUser;
+    }*/
 }
