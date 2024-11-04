@@ -1,9 +1,14 @@
 server:
-  port: 9019
+  port: 9017
 
 spring:
   application:
-    name: payweb-authserver
+    name: kn-system
+#  security:
+#    oauth2:
+#      resourceserver:
+#        jwt:
+#          issuer-uri: http://localhost:9019
   datasource:
     driver-class-name: com.mysql.cj.jdbc.Driver
     username: root
@@ -37,5 +42,6 @@ logging:
 #mapper映射文件位置
 mybatis:
   mapper-locations: classpath:mapper/*.xml
-#配置xml文件中resultType返回值的包位置
+  #配置xml文件中resultType返回值的包位置
   typeAliasesPackage: qingxia.tang.jpa.bean
+

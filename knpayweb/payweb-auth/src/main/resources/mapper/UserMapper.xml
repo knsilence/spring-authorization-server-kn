@@ -6,15 +6,13 @@
 	2.CatMapper.xml文件名称必须与使用@Mapper的接口一致
 	3.标签中的id必须与@Mapper的接口中的方法名一致，且参数一致
   -->
-<mapper namespace= "com.kn.auth.mapper.UserMapper" >
-    <resultMap id ="UserInfoMap" type="com.kn.auth.pojo.UserInfo">
+<mapper namespace="com.kn.auth.mapper.UserMapper">
+<!--    <resultMap id="UserInfoMap" type="com.kn.auth.pojo.UserInfo">
         <result column="id" property="id"/>
-<!--        <result column="name" property="name"/>-->
-<!--        <result column="age" property="age"/>-->
-<!--        <result column="address_id" property="addressId"/>-->
-    </resultMap>
+    </resultMap>-->
 
-    <select id = "findByLoginname" resultMap="UserInfoMap">
-        select * from user_info
+<!--    <select id="findByLoginname" resultMap="UserInfoMap" parameterType="string">-->
+            <select id = "findByLoginname" resultType="com.kn.auth.pojo.UserInfo"  parameterType="string">
+        select * from user_info where loginname =#{loginname}
     </select>
 </mapper>
