@@ -16,23 +16,20 @@ import org.springframework.security.oauth2.server.authorization.authentication.O
 import org.springframework.security.oauth2.server.authorization.authentication.OAuth2ClientAuthenticationToken;
 import org.springframework.security.oauth2.server.authorization.client.RegisteredClient;
 import org.springframework.security.oauth2.server.authorization.context.AuthorizationServerContextHolder;
-import org.springframework.security.oauth2.server.authorization.settings.TokenSettings;
 import org.springframework.security.oauth2.server.authorization.token.*;
 import org.springframework.util.Assert;
 
 import java.security.Principal;
-import java.time.Duration;
 import java.util.HashSet;
 import java.util.Set;
 
 
 /*密码登录*/
-public class PasswordcodeGrantAuthenticationProvider implements AuthenticationProvider {
+public class PasswordCodeGrantAuthenticationProvider implements AuthenticationProvider {
 
     private OAuth2AuthorizationService authorizationService;
     private OAuth2TokenGenerator<? extends OAuth2Token> tokenGenerator;
 
-    //    @Resource(name = "userDetailsService")
     private final UserDetailsService userDetailsService;
     private final PasswordEncoder passwordEncoder;
 
@@ -40,7 +37,7 @@ public class PasswordcodeGrantAuthenticationProvider implements AuthenticationPr
     private String password = new String();
     private Set<String> authorizedScopes = new HashSet<>();
 
-    public PasswordcodeGrantAuthenticationProvider(OAuth2AuthorizationService authorizationService,
+    public PasswordCodeGrantAuthenticationProvider(OAuth2AuthorizationService authorizationService,
                                                    OAuth2TokenGenerator<? extends OAuth2Token> tokenGenerator, UserDetailsService userDetailsService, PasswordEncoder passwordEncoder) {
         Assert.notNull(authorizationService, "authorizationService cannot be null");
         Assert.notNull(tokenGenerator, "tokenGenerator cannot be null");
@@ -50,7 +47,7 @@ public class PasswordcodeGrantAuthenticationProvider implements AuthenticationPr
         this.userDetailsService = userDetailsService;
     }
 
-
+//认证
     @Override
     public Authentication authenticate(Authentication authentication) throws AuthenticationException {
         PasswordCodeGrantAuthenticationToken authenticationToken =
@@ -87,7 +84,6 @@ public class PasswordcodeGrantAuthenticationProvider implements AuthenticationPr
         // Generate the access token
         DefaultOAuth2TokenContext.Builder builder = DefaultOAuth2TokenContext.builder()
                 .registeredClient(registeredClient)
-                //TODO：改动 原先是clientPrincipal
                 .principal(usernamePasswordAuthenticationToken)
                 .authorizationServerContext(AuthorizationServerContextHolder.getContext())
                 .authorizationGrantType(authenticationToken.getGrantType())
@@ -135,7 +131,7 @@ public class PasswordcodeGrantAuthenticationProvider implements AuthenticationPr
                 .build();
 
         // Save the OAuth2Authorization
-//        this.authorizationService.save(authorization);
+        this.authorizationService.save(authorization);
 
         return new OAuth2AccessTokenAuthenticationToken(registeredClient, usernamePasswordAuthenticationToken, accessToken,refreshToken);
     }

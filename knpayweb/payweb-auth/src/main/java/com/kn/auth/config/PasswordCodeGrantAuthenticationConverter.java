@@ -17,12 +17,11 @@ import java.util.*;
 
 public class PasswordCodeGrantAuthenticationConverter implements AuthenticationConverter {
 
-    static final String ACCESS_TOKEN_REQUEST_ERROR_URI = "https://dd";
+    static final String ACCESS_TOKEN_REQUEST_ERROR_URI = "https://baidu.com";
 
     @Nullable
     @Override
     public Authentication convert(HttpServletRequest request) {
-        // grant_type (REQUIRED)
         String grantType = request.getParameter(OAuth2ParameterNames.GRANT_TYPE);
         if (!SecurityConstants.GRANT_TYPE_PASSWORD_CODE.equals(grantType)) {
             return null;
@@ -45,21 +44,6 @@ public class PasswordCodeGrantAuthenticationConverter implements AuthenticationC
             requestedScopes = new HashSet<>(
                     Arrays.asList(StringUtils.delimitedListToStringArray(scope, " ")));
         }
-        // Mobile phone number (REQUIRED)
-       /* String username = parameters.getFirst(SecurityConstants.OAUTH_PARAMETER_PASSWORD_NAME);
-        if (!StringUtils.hasText(username) || parameters.get(SecurityConstants.OAUTH_PARAMETER_PASSWORD_NAME).size() != 1) {
-            SecurityUtils.throwError(
-                    OAuth2ErrorCodes.INVALID_REQUEST,
-                    "OAuth 2.0 Parameter: " + SecurityConstants.OAUTH_PARAMETER_PASSWORD_NAME,
-                    ACCESS_TOKEN_REQUEST_ERROR_URI);
-        }
-        String password = parameters.getFirst(SecurityConstants.OAUTH_PARAMETER_PASSWORD_PASSWORD);
-        if (!StringUtils.hasText(password) || parameters.get(SecurityConstants.OAUTH_PARAMETER_PASSWORD_PASSWORD).size() != 1) {
-            SecurityUtils.throwError(
-                    OAuth2ErrorCodes.INVALID_REQUEST,
-                    "OAuth 2.0 Parameter: " + SecurityConstants.OAUTH_PARAMETER_PASSWORD_PASSWORD,
-                    ACCESS_TOKEN_REQUEST_ERROR_URI);
-        }*/
 
         Map<String, Object> additionalParameters = new HashMap<>();
         parameters.forEach((key, value) -> {

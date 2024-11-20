@@ -1,33 +1,30 @@
-package com.kn.auth.config;
+# 一、登陆相关知识及遇到的问题
 
-import com.kn.core.model.LoginUser;
-import com.nimbusds.jose.jwk.source.JWKSource;
-import com.nimbusds.jose.proc.SecurityContext;
-import com.kn.auth.util.SecurityUtils;
-import org.springframework.beans.BeanUtils;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.context.annotation.Bean;
-import org.springframework.context.annotation.Configuration;
-import org.springframework.jdbc.core.JdbcTemplate;
-import org.springframework.security.config.Customizer;
-import org.springframework.security.config.annotation.web.builders.HttpSecurity;
-import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
-import org.springframework.security.core.userdetails.UserDetails;
-import org.springframework.security.core.userdetails.UserDetailsService;
-import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
-import org.springframework.security.crypto.password.PasswordEncoder;
-import org.springframework.security.oauth2.core.oidc.endpoint.OidcParameterNames;
-import org.springframework.security.oauth2.jwt.JwtClaimsSet;
-import org.springframework.security.oauth2.jwt.NimbusJwtEncoder;
-import org.springframework.security.oauth2.server.authorization.*;
-import org.springframework.security.oauth2.server.authorization.client.JdbcRegisteredClientRepository;
-import org.springframework.security.oauth2.server.authorization.client.RegisteredClientRepository;
-import org.springframework.security.oauth2.server.authorization.config.annotation.web.configurers.OAuth2AuthorizationServerConfigurer;
-import org.springframework.security.oauth2.server.authorization.token.*;
-import org.springframework.security.web.SecurityFilterChain;
-import org.springframework.security.web.util.matcher.RequestMatcher;
+## 一、知识
 
-import java.util.Map;
+### 1、
+
+### 二、实现
+
+1、首先引入依赖：
+
+```
+        <dependency>
+            <groupId>org.springframework.boot</groupId>
+            <artifactId>spring-boot-starter-oauth2-authorization-server</artifactId>
+        </dependency>
+ <!-- 添加spring security cas支持。这里需添加spring-security-cas依赖，
+否则启动时报java.lang.ClassNotFoundException: org.springframework.security.cas.jackson2.CasJackson2Module错误。
+-->
+        <dependency>
+            <groupId>org.springframework.security</groupId>
+            <artifactId>spring-security-cas</artifactId>
+        </dependency>
+```
+
+2、AuthorizationConfig文件
+
+```
 
 /* https://www.youtube.com/watch?v=HdSktctSplc 参考视频*/
 
@@ -55,9 +52,9 @@ public class AuthorizationConfig {
         OAuth2AuthorizationServerConfigurer authorizationServerConfigurer = new OAuth2AuthorizationServerConfigurer();
         //将自定义converter和provider存入tokenEndpoint
         authorizationServerConfigurer.tokenEndpoint(tokenEndpoint -> tokenEndpoint.accessTokenRequestConverter(new EmailCodeGrantAuthenticationConverter())
-                .authenticationProvider(new EmailCodeGrantAuthenticationProvider(authorizationService, tokenGenerator, userDetailsService, passwordEncoder())));
+                .authenticationProvider(new EmailCodeGrantAuthenticationProvider(authorizationService, tokenGenerator)));
         authorizationServerConfigurer.tokenEndpoint(tokenEndpoint -> tokenEndpoint.accessTokenRequestConverter(new PasswordCodeGrantAuthenticationConverter())
-                .authenticationProvider(new PasswordCodeGrantAuthenticationProvider(authorizationService, tokenGenerator, userDetailsService, passwordEncoder())));
+                .authenticationProvider(new PasswordcodeGrantAuthenticationProvider(authorizationService, tokenGenerator, userDetailsService, passwordEncoder())));
 
         RequestMatcher endpointsMatcher = authorizationServerConfigurer.getEndpointsMatcher();
 
@@ -149,8 +146,7 @@ public class AuthorizationConfig {
     public SecurityFilterChain defaultSecurityFilterChain(HttpSecurity http) throws Exception {
         http.authorizeHttpRequests((authorize) -> authorize
                         // 放行静态资源
-                        .requestMatchers("/assets/**", "/webjars/**", "/login/**","test").permitAll()
-//                        .requestMatchers("/assets/**", "/webjars/**", "/login/**","/test/**").permitAll()
+                        .requestMatchers("/assets/**", "/webjars/**", "/login/**").permitAll()
                         .anyRequest().authenticated()
                 )
                 // 指定登录页面
@@ -167,4 +163,86 @@ public class AuthorizationConfig {
         );
         return http.build();
     }
+```
+
+3、自定义AuthenticationConverter
+
+```
+public class PasswordCodeGrantAuthenticationConverter implements AuthenticationConverter {
+
+    static final String ACCESS_TOKEN_REQUEST_ERROR_URI = "https://baidu.com";
+
+    @Nullable
+    @Override
+    public Authentication convert(HttpServletRequest request) {
+        String grantType = request.getParameter(OAuth2ParameterNames.GRANT_TYPE);
+        if (!SecurityConstants.GRANT_TYPE_PASSWORD_CODE.equals(grantType)) {
+            return null;
+        }
+
+        Authentication clientPrincipal = SecurityContextHolder.getContext().getAuthentication();
+        MultiValueMap<String, String> parameters = getParameters(request);
+
+        // scope (OPTIONAL)
+        String scope = parameters.getFirst(OAuth2ParameterNames.SCOPE);
+        if (StringUtils.hasText(scope) &&
+                parameters.get(OAuth2ParameterNames.SCOPE).size() != 1) {
+            SecurityUtils.throwError(
+                    OAuth2ErrorCodes.INVALID_REQUEST,
+                    "OAuth 2.0 Parameter: " + OAuth2ParameterNames.SCOPE,
+                    ACCESS_TOKEN_REQUEST_ERROR_URI);
+        }
+        Set<String> requestedScopes = null;
+        if (StringUtils.hasText(scope)) {
+            requestedScopes = new HashSet<>(
+                    Arrays.asList(StringUtils.delimitedListToStringArray(scope, " ")));
+        }
+
+        Map<String, Object> additionalParameters = new HashMap<>();
+        parameters.forEach((key, value) -> {
+            if (!key.equals(OAuth2ParameterNames.GRANT_TYPE) &&
+                    !key.equals(OAuth2ParameterNames.CLIENT_ID) &&
+                    !key.equals(OAuth2ParameterNames.SCOPE)) {
+                additionalParameters.put(key, value.get(0));
+            }
+        });
+
+        return new PasswordCodeGrantAuthenticationToken(new AuthorizationGrantType(SecurityConstants.GRANT_TYPE_PASSWORD_CODE), clientPrincipal,requestedScopes, additionalParameters);
+    }
+
+    private static MultiValueMap<String, String> getParameters(HttpServletRequest request) {
+        Map<String, String[]> parameterMap = request.getParameterMap();
+        MultiValueMap<String, String> parameters = new LinkedMultiValueMap<>(parameterMap.size());
+        parameterMap.forEach((key, values) -> {
+            if (values.length > 0) {
+                for (String value : values) {
+                    parameters.add(key, value);
+                }
+            }
+        });
+        return parameters;
+    }
+
 }
+```
+
+### 三、问题
+
+### 1、jwt如何在未到到期时间之前就使其无法验证，用于用户注销等实际功能
+
+因为jwt拥有无需存在服务器的优势，所以我们尽量不将jwt存储在服务器里。第一种方式是设置jwt过期时间短一些，刷新token时间长一些，这样即使客户端token被删除，而用户私自保存，jwt也会很快过期。第二种方式是创建jwt黑名单，每次请求都会先根据当前jwt查redis服务器，如果存在redis里，就是理论上应该注销了的不能使用的jwt，此时不可请求通过，这种方式在保存jwt时，将redis的过期时间存储为jwt的过期时间，这样在jwt过期时redis中也不会再有它的存在了。
+
+### 2、跨包调用方法报错A component required a bean of type ‘xxx‘ that could not be found.
+
+@MainInterface自己写的注解，com.kn.core包里的UserUtil需要用@Component放入spring容器中进行管理，因此在其他包里需要扫描这个包，也就需要加一个注解，如果不加这个注解，直接@ComponentScan扫描，就只能扫描到core包，没法扫描自己的包了。
+
+```
+1、@Import({MainConfig.class})
+2、
+@ComponentScan({"com.kn.core"})
+public class MainConfig {
+    public MainConfig() {
+    }
+}
+```
+

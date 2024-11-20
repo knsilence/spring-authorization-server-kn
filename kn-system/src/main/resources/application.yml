@@ -4,11 +4,15 @@ server:
 spring:
   application:
     name: kn-system
-#  security:
-#    oauth2:
-#      resourceserver:
-#        jwt:
-#          issuer-uri: http://localhost:9019
+  cloud:
+    nacos:
+      discovery:
+        server-addr: 127.0.0.1:8848
+  security:
+    oauth2:
+      resourceserver:
+        jwt:
+          issuer-uri: http://localhost:9017
   datasource:
     driver-class-name: com.mysql.cj.jdbc.Driver
     username: root

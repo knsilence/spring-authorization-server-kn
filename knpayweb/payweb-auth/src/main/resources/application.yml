@@ -9,6 +9,16 @@ spring:
     username: root
     password: 123456
     url: jdbc:mysql://localhost:3306/kn_users?userUnicode=true&characterEncoding=utf8
+
+#  config:
+#    activate:
+#      on-profile: local
+  cloud:
+    nacos:
+      discovery:
+        server-addr: 127.0.0.1:8848
+        #        namespace: 8d582ff3-f890-4a67-b75c-e6c20a86534c
+        #如果开启认证的话需要用户名和密码，未开启的话请注释
   #    redis 配置
   data:
     redis:
@@ -37,5 +47,5 @@ logging:
 #mapper映射文件位置
 mybatis:
   mapper-locations: classpath:mapper/*.xml
-#配置xml文件中resultType返回值的包位置
+  #配置xml文件中resultType返回值的包位置
   typeAliasesPackage: qingxia.tang.jpa.bean
