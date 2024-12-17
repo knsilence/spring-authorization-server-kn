@@ -13,6 +13,6 @@
 
 <!--    <select id="findByLoginname" resultMap="UserInfoMap" parameterType="string">-->
             <select id = "findByLoginname" resultType="com.kn.auth.pojo.UserInfo"  parameterType="string">
-        select * from user_info where loginname =#{loginname}
+        select * from user_info where loginname =#{loginname} or email=#{loginname}
     </select>
 </mapper>

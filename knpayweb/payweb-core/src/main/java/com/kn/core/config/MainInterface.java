@@ -13,6 +13,7 @@ import java.lang.annotation.*;
 @Documented
 @SpringBootApplication
 @EnableFeignClients
+@EnableDiscoveryClient
 @Import({MainConfig.class})
 public @interface MainInterface {
 }

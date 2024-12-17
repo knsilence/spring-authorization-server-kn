@@ -4,20 +4,20 @@ server:
 spring:
   application:
     name: kn-system
-  cloud:
-    nacos:
-      discovery:
-        server-addr: 127.0.0.1:8848
   security:
     oauth2:
       resourceserver:
         jwt:
-          issuer-uri: http://localhost:9017
+          issuer-uri: http://localhost:9019
   datasource:
     driver-class-name: com.mysql.cj.jdbc.Driver
     username: root
     password: 123456
     url: jdbc:mysql://localhost:3306/kn_users?userUnicode=true&characterEncoding=utf8
+  cloud:
+    nacos:
+      discovery:
+        server-addr: 127.0.0.1:8848
   #    redis 配置
   data:
     redis:

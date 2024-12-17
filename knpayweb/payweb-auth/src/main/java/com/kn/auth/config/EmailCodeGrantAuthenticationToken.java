@@ -1,5 +1,6 @@
 package com.kn.auth.config;
 
+import com.kn.core.common.GrantTypes;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Profile;
 import org.springframework.lang.Nullable;
@@ -26,7 +27,6 @@ public class EmailCodeGrantAuthenticationToken extends OAuth2AuthorizationGrantA
     private final String username;
 
     private final String password;
-
     public String getUsername() {
         return username;
     }
@@ -54,8 +54,8 @@ public class EmailCodeGrantAuthenticationToken extends OAuth2AuthorizationGrantA
         this.scopes = scopes;
 //        this.clientPrincipal = clientPrincipal;
 //        this.authorizationGrantType = authorizationGrantType;
-        this.username= (String) additionalParameters.get(SecurityConstants.OAUTH_PARAMETER_PASSWORD_NAME);
-        this.password= (String) additionalParameters.get(SecurityConstants.OAUTH_PARAMETER_PASSWORD_PASSWORD);
+        this.username= (String) additionalParameters.get(GrantTypes.OAUTH_PARAMETER_EMAIL_NAME);
+        this.password= (String) additionalParameters.get(GrantTypes.OAUTH_PARAMETER_EMAIL_PASSWORD);
         if(this.scopes==null||this.scopes.isEmpty()){
             throw new OAuth2AuthenticationException(OAuth2ErrorCodes.INVALID_SCOPE);
         }

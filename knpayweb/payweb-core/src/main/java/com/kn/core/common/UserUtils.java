@@ -8,6 +8,7 @@ import com.nimbusds.jose.shaded.gson.internal.LinkedTreeMap;
 import org.springframework.context.annotation.Bean;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
+import org.springframework.security.oauth2.core.oidc.user.OidcUser;
 import org.springframework.security.oauth2.jwt.Jwt;
 import org.springframework.stereotype.Component;
 
@@ -19,7 +20,7 @@ public class UserUtils {
     public UserUtils() {
     }
 
-   /* public LoginUser loginUser(String access_token) {
+/*    public LoginUser loginUser(String access_token) {
         OAuth2AccessToken accessToken = this.tokenStore.readAccessToken(access_token);
         Map<String, Object> map = accessToken.getAdditionalInformation();
 
@@ -37,6 +38,10 @@ public class UserUtils {
 
     public LoginUser loginUser() {
         Authentication auth = SecurityContextHolder.getContext().getAuthentication();
+        if (auth.getPrincipal() instanceof OidcUser) {
+            OidcUser principal = ((OidcUser) auth.getPrincipal());
+            System.out.println(principal.getClaims());
+        }
         Jwt principal = (Jwt) auth.getPrincipal();
         Map<String, Object> claims = principal.getClaims();
         ObjectMapper objectMapper = new ObjectMapper();

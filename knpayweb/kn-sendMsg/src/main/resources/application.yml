@@ -1,0 +1,75 @@
+server:
+  port: 9020
+
+spring:
+  application:
+    name: payweb-sendMsg
+  datasource:
+    driver-class-name: com.mysql.cj.jdbc.Driver
+    username: root
+    password: 123456
+    url: jdbc:mysql://localhost:3306/kn_users?userUnicode=true&characterEncoding=utf8
+  security:
+    oauth2:
+      resourceserver:
+        jwt:
+          issuer-uri: http://127.0.0.1:9019
+  #nacos注册中心
+  cloud:
+    nacos:
+      discovery:
+        server-addr: 127.0.0.1:8848
+  #redis 配置
+  data:
+    redis:
+      database: 0
+      host: localhost
+      port: 6379
+      jedis:
+        pool:
+          max-active: 8
+          max-idle: 8
+          min-idle: 0
+      timeout: 100ms
+  jpa:
+    show-sql: true
+    properties:
+      hibernate:
+        dialect: org.hibernate.dialect.MySQL8Dialect
+    generate-ddl: true
+    hibernate:
+      ddl-auto: update
+  #邮箱
+  mail:
+    #smtp服务主机
+    host: smtp.qq.com
+    #端口号
+    port: 587
+    #服务协议
+    protocol: smtp
+    # 编码集
+    default-encoding: UTF-8
+    #发送邮件的账户
+#    TODO:公开代码之前必须删除的内容！！！！！！！
+    username: 810719021@qq.com
+    #授权码，刚刚生成的授权码
+    #    TODO:公开代码之前必须删除的内容！！！！！！！
+    password: hyuyznlmtkwabbgb
+    test-connection: true
+    properties:
+      mail:
+        smtp:
+          auth: true
+          starttls:
+            enable: true
+            required: true
+#日志
+logging:
+  level:
+    org.springframework.security: trace
+
+#mapper映射文件位置
+mybatis:
+  mapper-locations: classpath:mapper/*.xml
+  #配置xml文件中resultType返回值的包位置
+  typeAliasesPackage: qingxia.tang.jpa.bean

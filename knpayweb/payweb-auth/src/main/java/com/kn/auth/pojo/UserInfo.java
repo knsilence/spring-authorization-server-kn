@@ -5,6 +5,8 @@ import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 import org.hibernate.annotations.GenericGenerator;
+import org.hibernate.annotations.JdbcTypeCode;
+import org.hibernate.type.SqlTypes;
 
 import java.io.Serializable;
 @Data
@@ -30,6 +32,9 @@ public class UserInfo implements Serializable {
     @Column
     private String password;
 
+    @Column
+    private String email;
+
     //1不可用2可用
     @Column(name = "isdisabled")
     private boolean isDisabled;
@@ -53,16 +58,12 @@ public class UserInfo implements Serializable {
     @Column
     private Integer gender;
 
-    /**
-     * 头像名称 notNUll
-     */
-    @Column(name = "imgname")
-    private String imgName;
 
     /**
      * 头像路径 notNUll
      */
-    @Column(name = "imgpath")
+//    @JdbcTypeCode(SqlTypes.JSON)
+    @Column(name = "imgpath",columnDefinition = "TEXT")
     private String imgPath;
 
     /**

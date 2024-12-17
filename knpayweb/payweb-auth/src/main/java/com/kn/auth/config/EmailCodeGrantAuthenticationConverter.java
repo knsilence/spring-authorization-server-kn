@@ -1,5 +1,6 @@
 package com.kn.auth.config;
 import com.kn.auth.util.SecurityUtils;
+import com.kn.core.common.GrantTypes;
 import jakarta.servlet.http.HttpServletRequest;
 import org.springframework.lang.Nullable;
 import org.springframework.security.core.Authentication;
@@ -23,7 +24,7 @@ public class EmailCodeGrantAuthenticationConverter implements AuthenticationConv
     @Override
     public Authentication convert(HttpServletRequest request) {
         String grantType = request.getParameter(OAuth2ParameterNames.GRANT_TYPE);
-        if (!SecurityConstants.GRANT_TYPE_PASSWORD_CODE.equals(grantType)) {
+        if (!GrantTypes.GRANT_TYPE_EMAIL_CODE.equals(grantType)) {
             return null;
         }
 
@@ -54,7 +55,7 @@ public class EmailCodeGrantAuthenticationConverter implements AuthenticationConv
             }
         });
 
-        return new PasswordCodeGrantAuthenticationToken(new AuthorizationGrantType(SecurityConstants.GRANT_TYPE_PASSWORD_CODE), clientPrincipal,requestedScopes, additionalParameters);
+        return new EmailCodeGrantAuthenticationToken(new AuthorizationGrantType(GrantTypes.GRANT_TYPE_EMAIL_CODE), clientPrincipal,requestedScopes, additionalParameters);
     }
 
     private static MultiValueMap<String, String> getParameters(HttpServletRequest request) {

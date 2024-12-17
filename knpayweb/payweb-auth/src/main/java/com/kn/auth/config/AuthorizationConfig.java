@@ -1,5 +1,6 @@
 package com.kn.auth.config;
 
+import com.kn.auth.client.SendMsgClient;
 import com.kn.core.model.LoginUser;
 import com.nimbusds.jose.jwk.source.JWKSource;
 import com.nimbusds.jose.proc.SecurityContext;
@@ -9,6 +10,8 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.jdbc.core.JdbcTemplate;
+import org.springframework.security.authentication.AuthenticationManager;
+import org.springframework.security.authentication.ProviderManager;
 import org.springframework.security.config.Customizer;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
@@ -29,6 +32,8 @@ import org.springframework.security.web.util.matcher.RequestMatcher;
 
 import java.util.Map;
 
+import static org.springframework.web.servlet.function.RequestPredicates.headers;
+
 /* https://www.youtube.com/watch?v=HdSktctSplc 参考视频*/
 
 /**
@@ -46,6 +51,9 @@ public class AuthorizationConfig {
     //此处需要自己重写实现该类里loadUserByUsername()的方法
     private UserDetailsService userDetailsService;
 
+    @Autowired
+    private SendMsgClient sendMsgClient;
+
     @Bean
     SecurityFilterChain authorizationServerSecurityFilterChain(
             HttpSecurity http,
@@ -54,11 +62,10 @@ public class AuthorizationConfig {
 
         OAuth2AuthorizationServerConfigurer authorizationServerConfigurer = new OAuth2AuthorizationServerConfigurer();
         //将自定义converter和provider存入tokenEndpoint
-        authorizationServerConfigurer.tokenEndpoint(tokenEndpoint -> tokenEndpoint.accessTokenRequestConverter(new EmailCodeGrantAuthenticationConverter())
-                .authenticationProvider(new EmailCodeGrantAuthenticationProvider(authorizationService, tokenGenerator, userDetailsService, passwordEncoder())));
         authorizationServerConfigurer.tokenEndpoint(tokenEndpoint -> tokenEndpoint.accessTokenRequestConverter(new PasswordCodeGrantAuthenticationConverter())
                 .authenticationProvider(new PasswordCodeGrantAuthenticationProvider(authorizationService, tokenGenerator, userDetailsService, passwordEncoder())));
-
+        authorizationServerConfigurer.tokenEndpoint(tokenEndpoint -> tokenEndpoint.accessTokenRequestConverter(new EmailCodeGrantAuthenticationConverter())
+                .authenticationProvider(new EmailCodeGrantAuthenticationProvider(authorizationService, tokenGenerator, userDetailsService, sendMsgClient, passwordEncoder())));
         RequestMatcher endpointsMatcher = authorizationServerConfigurer.getEndpointsMatcher();
 
         http.securityMatcher(endpointsMatcher)
@@ -88,7 +95,7 @@ public class AuthorizationConfig {
                 .clientId("weblogin-client")
                 .clientSecret(passwordEncoder.encode("weblogin-client123456"))
                 .clientAuthenticationMethod(ClientAuthenticationMethod.CLIENT_SECRET_BASIC)
-                .authorizationGrantType(new AuthorizationGrantType(SecurityConstants.GRANT_TYPE_EMAIL_CODE))
+                .authorizationGrantType(new AuthorizationGrantType(GrantTypes.GRANT_TYPE_EMAIL_CODE))
                 .authorizationGrantType(AuthorizationGrantType.AUTHORIZATION_CODE)
                 .authorizationGrantType(AuthorizationGrantType.REFRESH_TOKEN)
                 .scope("message.read")
@@ -137,6 +144,8 @@ public class AuthorizationConfig {
                 LoginUser loginUser = new LoginUser();
                 BeanUtils.copyProperties(userDetails, loginUser);
                 claims.claim("userInfo", loginUser);
+                //TODO：此处很奇怪，本服务直接登录，就是http://localhost，从其他服务进行登陆生成jwt，此处iss就会变成此服务ip+端口。以后上线一定要改这个地方
+                claims.claim("iss", "http://localhost:9019");
             } else if (context.getTokenType().getValue().equals(OidcParameterNames.ID_TOKEN)) {
                 // Customize headers/claims for id_token
 
@@ -145,13 +154,21 @@ public class AuthorizationConfig {
     }
 
     //此处设置静态页面过滤及权限过滤
+    /*Spring Security4默认是开启CSRF的，所以需要请求中包含CSRF的token信息，在其官方文档（参考资料1）中，提供了在form中嵌入一个hidden标签来获取token信息，其原理是，hidden标签使用了Spring Security4提供的标签，即${_csrf.parameterName}、${_csrf.token}， 后台页面渲染过程中，将此标签解所对应的值解析出来，这样，我们的form表单，就嵌入了Spring Security的所需的token信息，在后续的提交登录请求时，就不会出现没有CSRF token的异常。
+
+另外，还有一个解决办法是，通过关闭CSRF来解决，这个几乎在任何场景中都能解决这个问题（上面这个解决方案，可能在某些渲染模板不能解析出来token值，不过可以通过后台程序来获取token值，然后自己定义变量来渲染到form中，这个也是可以的）。具体的做法是通过修改配置文件来关闭，我这里使用的是SpringBoot开发的项目，配置文件直接写在配置类中，通过.csrf().disable()来关闭，参考资料见二。不过这种方案，会迎来CSRF攻击，不建议在生产环境中使用，如果系统对外界做了隔离，这样做也是可以的。*/
     @Bean
     public SecurityFilterChain defaultSecurityFilterChain(HttpSecurity http) throws Exception {
-        http.authorizeHttpRequests((authorize) -> authorize
-                        // 放行静态资源
-                        .requestMatchers("/assets/**", "/webjars/**", "/login/**","test").permitAll()
-//                        .requestMatchers("/assets/**", "/webjars/**", "/login/**","/test/**").permitAll()
-                        .anyRequest().authenticated()
+        http.authorizeHttpRequests((authorize) -> {
+                            try {
+                                authorize
+                                        // 放行静态资源
+                                        .requestMatchers("/assets/**", "/webjars/**", "/login/**", "test").permitAll()
+                                        .anyRequest().authenticated().and().csrf().disable();//关闭CSR;
+                            } catch (Exception e) {
+                                throw new RuntimeException(e);
+                            }
+                        }
                 )
                 // 指定登录页面
                 .formLogin(formLogin ->

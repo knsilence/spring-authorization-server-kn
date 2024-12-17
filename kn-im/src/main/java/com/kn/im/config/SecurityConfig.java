@@ -12,10 +12,9 @@ import org.springframework.security.web.SecurityFilterChain;
 
 @Configuration
 @EnableWebSecurity
-
 public class SecurityConfig {
     //此处设置静态页面过滤及权限过滤
-    @Bean
+  /*  @Bean
     public SecurityFilterChain defaultSecurityFilterChain(HttpSecurity http) throws Exception {
         http.authorizeHttpRequests((authorize) -> authorize
                                 // 放行静态资源
@@ -32,6 +31,6 @@ public class SecurityConfig {
                         .jwt(Customizer.withDefaults())
         );
         return http.build();
-    }
+    }*/
 }
 

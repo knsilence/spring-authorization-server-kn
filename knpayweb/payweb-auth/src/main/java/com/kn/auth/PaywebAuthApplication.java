@@ -11,7 +11,6 @@ import org.springframework.context.annotation.Import;
 import org.springframework.data.jpa.repository.config.EnableJpaRepositories;
 
 @MainInterface
-@EnableDiscoveryClient
 public class PaywebAuthApplication {
 
     public static void main(String[] args) {

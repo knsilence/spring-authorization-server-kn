@@ -7,7 +7,6 @@ import org.springframework.cloud.client.discovery.EnableDiscoveryClient;
 import org.springframework.context.annotation.ComponentScan;
 
 @MainInterface
-@EnableDiscoveryClient
 public class KnImApplication {
 
 	public static void main(String[] args) {

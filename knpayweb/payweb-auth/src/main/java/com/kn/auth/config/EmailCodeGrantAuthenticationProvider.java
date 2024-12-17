@@ -1,5 +1,6 @@
 package com.kn.auth.config;
 
+import com.kn.auth.client.SendMsgClient;
 import com.kn.auth.model.UserInfoModel;
 import org.springframework.security.authentication.AuthenticationProvider;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
@@ -33,44 +34,43 @@ public class EmailCodeGrantAuthenticationProvider implements AuthenticationProvi
     private OAuth2TokenGenerator<? extends OAuth2Token> tokenGenerator;
 
     private final UserDetailsService userDetailsService;
+    private final SendMsgClient sendMsgClient;
     private final PasswordEncoder passwordEncoder;
 
-    private String username = new String();
-    private String password = new String();
+    private String emailName = new String();
+    private String emailCode = new String();
     private Set<String> authorizedScopes = new HashSet<>();
 
     public EmailCodeGrantAuthenticationProvider(OAuth2AuthorizationService authorizationService,
-                                                   OAuth2TokenGenerator<? extends OAuth2Token> tokenGenerator, UserDetailsService userDetailsService, PasswordEncoder passwordEncoder) {
+                                                OAuth2TokenGenerator<? extends OAuth2Token> tokenGenerator, UserDetailsService userDetailsService, SendMsgClient sendMsgClient, PasswordEncoder passwordEncoder) {
         Assert.notNull(authorizationService, "authorizationService cannot be null");
         Assert.notNull(tokenGenerator, "tokenGenerator cannot be null");
         this.authorizationService = authorizationService;
         this.tokenGenerator = tokenGenerator;
         this.passwordEncoder = passwordEncoder;
         this.userDetailsService = userDetailsService;
+        this.sendMsgClient = sendMsgClient;
     }
 
     //认证
     @Override
     public Authentication authenticate(Authentication authentication) throws AuthenticationException {
-        PasswordCodeGrantAuthenticationToken authenticationToken =
-                (PasswordCodeGrantAuthenticationToken) authentication;
+        EmailCodeGrantAuthenticationToken authenticationToken = null;
+        try {
+            authenticationToken =
+                    (EmailCodeGrantAuthenticationToken) authentication;
+        } catch (Exception e) {
+            return null;
+        }
         // Ensure the client is authenticated
         OAuth2ClientAuthenticationToken clientPrincipal =
                 getAuthenticatedClientElseThrowInvalidClient(authenticationToken);
         RegisteredClient registeredClient = clientPrincipal.getRegisteredClient();
-        username = authenticationToken.getUsername();
-        password = authenticationToken.getPassword();
+        emailName = authenticationToken.getUsername();
+        emailCode = authenticationToken.getPassword();
         authorizedScopes = authenticationToken.getScopes();
 
-        // TODO Validate the code parameter
-        UserInfoModel userInfoModel = null;
-        try {
-            userInfoModel = (UserInfoModel) userDetailsService.loadUserByUsername(username);
-        } catch (UsernameNotFoundException e) {
-            throw new OAuth2AuthenticationException(OAuth2ErrorCodes.ACCESS_DENIED);
-        }
-        if (!passwordEncoder.matches(password, userInfoModel.getPassword()) || !userInfoModel.getUsername().equals(username))
-            throw new OAuth2AuthenticationException(OAuth2ErrorCodes.ACCESS_DENIED);
+
         // 确保注册认证中心（即自己建的数据表oauth2-register-client里包含当前的granttype）
         if (!registeredClient.getAuthorizationGrantTypes().contains(authenticationToken.getGrantType())) {
             throw new OAuth2AuthenticationException(OAuth2ErrorCodes.UNAUTHORIZED_CLIENT);
@@ -81,6 +81,20 @@ public class EmailCodeGrantAuthenticationProvider implements AuthenticationProvi
                 throw new OAuth2AuthenticationException(OAuth2ErrorCodes.INVALID_SCOPE);
             }
         });
+        //校验账号密码或邮箱验证码
+        UserInfoModel userInfoModel = null;
+        try {
+            userInfoModel = (UserInfoModel) userDetailsService.loadUserByUsername(emailName);
+        } catch (UsernameNotFoundException e) {
+            throw new OAuth2AuthenticationException(OAuth2ErrorCodes.ACCESS_DENIED);
+        }
+        if ( !userInfoModel.getUsername().equals(emailName))
+            throw new OAuth2AuthenticationException(OAuth2ErrorCodes.ACCESS_DENIED);
+
+        Boolean validEmailMsg = sendMsgClient.validEmailMsg(emailName, emailCode);
+        if (!validEmailMsg)
+            throw new OAuth2AuthenticationException(OAuth2ErrorCodes.ACCESS_DENIED);
+
         UsernamePasswordAuthenticationToken usernamePasswordAuthenticationToken = new UsernamePasswordAuthenticationToken(userInfoModel, null, userInfoModel.getAuthorities());
 
         // Generate the access token
@@ -135,12 +149,12 @@ public class EmailCodeGrantAuthenticationProvider implements AuthenticationProvi
         // Save the OAuth2Authorization
         this.authorizationService.save(authorization);
 
-        return new OAuth2AccessTokenAuthenticationToken(registeredClient, usernamePasswordAuthenticationToken, accessToken,refreshToken);
+        return new OAuth2AccessTokenAuthenticationToken(registeredClient, usernamePasswordAuthenticationToken, accessToken, refreshToken);
     }
 
     @Override
     public boolean supports(Class<?> authentication) {
-        return PasswordCodeGrantAuthenticationToken.class.isAssignableFrom(authentication);
+        return EmailCodeGrantAuthenticationToken.class.isAssignableFrom(authentication);
     }
 
     private static OAuth2ClientAuthenticationToken getAuthenticatedClientElseThrowInvalidClient(Authentication authentication) {
