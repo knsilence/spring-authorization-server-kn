@@ -50,11 +50,9 @@ spring:
     # 编码集
     default-encoding: UTF-8
     #发送邮件的账户
-#    TODO:公开代码之前必须删除的内容！！！！！！！
-    username: 810719021@qq.com
+    username: xxx
     #授权码，刚刚生成的授权码
-    #    TODO:公开代码之前必须删除的内容！！！！！！！
-    password: hyuyznlmtkwabbgb
+    password: xxx
     test-connection: true
     properties:
       mail:
