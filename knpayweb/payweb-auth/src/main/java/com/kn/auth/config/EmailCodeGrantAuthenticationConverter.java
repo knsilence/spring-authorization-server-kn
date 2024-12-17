@@ -15,7 +15,6 @@ import org.springframework.util.StringUtils;
 
 import java.util.*;
 
-//TODO：待改
 public class EmailCodeGrantAuthenticationConverter implements AuthenticationConverter {
 
     static final String ACCESS_TOKEN_REQUEST_ERROR_URI = "https://baidu.com";
